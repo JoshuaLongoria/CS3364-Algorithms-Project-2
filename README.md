@@ -1,5 +1,15 @@
 # CS3364-Algorithms-Project-2
 
+
+| Member          | Contribution                                                   |
+| --------------- | -------------------------------------------------------------- |
+| Joshua Longoria | Report & Code clean up           |
+| Kylon Ford      | --                               |
+| Mason Womack    | --                               |
+| Mia Troncoso    | --                               |
+| Marvin Stephens | --                               |
+
+
 Find the order of taking courses by applying topological ordering algorithm
 In real life, we have many things to do. We always need to think of the sequence to get things done: which we need to do first, which we can do next. This is a topological ordering problem. For example, in order to finish our program, we also need to think about the sequence of taking the courses, since some courses have their prerequisites. The following are the courses required by an undergraduate program in our computer science department. Could you find the solution for you and your fellows?
 
