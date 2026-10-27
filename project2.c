@@ -1,6 +1,13 @@
-﻿#include <stdio.h>
+/* CS 3364 Project 2: course ordering with DFS.
+ * Compile: gcc -std=c11 -Wall -Wextra -Wpedantic project2.c -o project2
+ * Run: ./project2
+ * Each edge points from a prerequisite to a dependent course.
+ */
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-char CLASSLIST[][5][10] = {
+
+static const char CLASSLIST[][5][10] = {
     {"CS1411"},{"MATH1451"},{"ENGL1301"},{"CS1412","CS1411"},
      {"MATH1452","MATH1451"},{"PHYS1408","MATH1451"}, {"ENGL1302","ENGL1301"},{"CS2413","CS1412"},
      {"CS1382","CS1411"},{"ECE2372","MATH1451"},{"MATH2450","MATH1452"},{"PHYS2401","PHYS1408"},
@@ -11,77 +18,154 @@ char CLASSLIST[][5][10] = {
      {"CS4354","CS3364"},{"CS4366","CS4365"}
 };
 
-int LISTSIZE = sizeof(CLASSLIST)/sizeof(CLASSLIST[0]);
+enum { COURSE_COUNT = sizeof(CLASSLIST) / sizeof(CLASSLIST[0]) };
+enum { WHITE, GRAY, BLACK };
 
+/* Array-backed adjacency lists: only degree[u] entries are traversed.
+ * Capacity grows automatically with the number of listed courses.
+ * Storage O(V^2); DFS O(V + E).
+ */
+typedef struct {
+    int count;
+    int edges;
+    int neighbors[COURSE_COUNT][COURSE_COUNT];
+    int degree[COURSE_COUNT];
+} Graph;
 
-void generateDAG(char dag[][5][10])
+int graphInit(Graph *g, int count)
 {
-    for (int i=0; i<LISTSIZE; i++)
-    {
-        strcpy(dag[i][0],CLASSLIST[i][0]); // copys from CLASSLIST to dag
-        int connect = 1; 
-        for (int j=0; j<LISTSIZE; j++)
-        {
-            for (int k=1; k<5; k++)
-            {
-                if (strcmp(CLASSLIST[j][k],CLASSLIST[i][0])==0 && connect <5)
-                {
-                    strcpy(dag[i][connect],CLASSLIST[j][0]);
-                    connect++;
-                }
-            }
-        }
-    }
+    if (!g || count < 0 || count > COURSE_COUNT) return 0;
+    memset(g, 0, sizeof(*g));
+    g->count = count;
+    return 1;
 }
 
-int generateGraph(char dag[][5][10],char V[][10],char E[][2][10])
+int addEdge(Graph *g, int source, int destination)
 {
-    int edgenum = 0;
-    for (int i=0; i<LISTSIZE; i++) //Loop throuhg dag list and copy to V
-    {
-        strcpy(V[i],dag[i][0]);
-        for (int j=1; j<5; j++) //Loop through V connections
-        {
-            if (dag[i][j][0] != '\0') // add Edges to list E
-            {
-                strcpy(E[edgenum][0],dag[i][0]);
-                strcpy(E[edgenum][1],dag[i][j]);
-                edgenum++;
-            }
-        }
-        
-    }  
-    return edgenum;
+    if (!g || source < 0 || source >= g->count ||
+        destination < 0 || destination >= g->count) return 0;
+    for (int i = 0; i < g->degree[source]; ++i)
+        if (g->neighbors[source][i] == destination) return 1;
+    if (g->degree[source] >= COURSE_COUNT) return 0;
+    g->neighbors[source][g->degree[source]++] = destination;
+    ++g->edges;
+    return 1;
 }
 
-int main()
+int findCourse(const char *code)
 {
-    char dag[LISTSIZE][5][10],V[LISTSIZE][10],E[100][2][10];
-    memset(dag, 0, sizeof(dag));
-    memset(V, 0, sizeof(V));
-    memset(E, 0, sizeof(E));
-    
-    generateDAG(dag);
-    int edgenum = generateGraph(dag, V, E);
-    
-    printf("dag:");
-    for (int i=0; i<LISTSIZE; i++)
-    {
-        printf("(");
-        for (int j=0; j<5;j++)
-        {
-            if (dag[i][j][0] != '\0') printf("%s, ",dag[i][j]);
-        }    
-        printf("\b\b)\n");
+    for (int i = 0; i < COURSE_COUNT; ++i)
+        if (strcmp(CLASSLIST[i][0], code) == 0) return i;
+    return -1;
+}
+
+int generateGraph(Graph *g)
+{
+    if (!graphInit(g, COURSE_COUNT)) return 0;
+    for (int course = 0; course < COURSE_COUNT; ++course) {
+        for (int p = 1; p < 5; ++p) {
+            if (CLASSLIST[course][p][0] == '\0') continue;
+            int prerequisite = findCourse(CLASSLIST[course][p]);
+            if (prerequisite < 0) {
+                fprintf(stderr, "Unknown prerequisite: %s\n", CLASSLIST[course][p]);
+                return 0;
+            }
+            if (!addEdge(g, prerequisite, course)) return 0;
+        }
     }
-    printf("V: ");
-    for (int i=0; i<LISTSIZE; i++) {printf("%s, ",V[i]);}
-    printf("\b\b\n");
-    printf("E:");
-    for (int i = 0; i < edgenum; i++)
-    {
-        printf("(%s, %s) ", E[i][0], E[i][1]);
+    return 1;
+}
+
+/* Gray neighbors are ancestors on the active path, indicating a cycle. */
+static int dfs(const Graph *g, int u, int color[], int order[], int *next)
+{
+    color[u] = GRAY;
+    for (int i = 0; i < g->degree[u]; ++i) {
+        int v = g->neighbors[u][i];
+        if (color[v] == GRAY) return 0;
+        if (color[v] == WHITE && !dfs(g, v, color, order, next)) return 0;
     }
-    printf("\b\n");
-    
+    color[u] = BLACK;
+    order[--(*next)] = u;  /* Fill right to left: reverse finishing order. */
+    return 1;
+}
+
+/* Returns 1 on success, 0 for a cycle, -1 for invalid arguments.
+ * order must hold at least g->count integers; use it only on success.
+ */
+int topologicalSort(const Graph *g, int order[], int capacity)
+{
+    int color[COURSE_COUNT] = {0};
+    if (!g || g->count < 0 || g->count > COURSE_COUNT ||
+        capacity < g->count || (g->count > 0 && !order)) return -1;
+    int next = g->count;
+    for (int u = 0; u < g->count; ++u)
+        if (color[u] == WHITE && !dfs(g, u, color, order, &next)) return 0;
+    return 1;
+}
+
+/* Verify that all vertices occur once and every edge goes forward. */
+int validateOrder(const Graph *g, const int order[], int length)
+{
+    int position[COURSE_COUNT];
+    if (!g || g->count < 0 || g->count > COURSE_COUNT ||
+        length != g->count || (length > 0 && !order)) return 0;
+    for (int i = 0; i < g->count; ++i) position[i] = -1;
+    for (int i = 0; i < length; ++i) {
+        int u = order[i];
+        if (u < 0 || u >= g->count || position[u] != -1) return 0;
+        position[u] = i;
+    }
+    for (int u = 0; u < g->count; ++u)
+        for (int i = 0; i < g->degree[u]; ++i)
+            if (position[u] >= position[g->neighbors[u][i]]) return 0;
+    return 1;
+}
+
+void printGraph(const Graph *g)
+{
+    puts("Adjacency lists (prerequisite -> dependent courses):");
+    for (int u = 0; u < g->count; ++u) {
+        printf("%s -> ", CLASSLIST[u][0]);
+        if (g->degree[u] == 0) printf("(none)");
+        for (int i = 0; i < g->degree[u]; ++i)
+            printf("%s%s", i ? ", " : "", CLASSLIST[g->neighbors[u][i]][0]);
+        putchar('\n');
+    }
+    printf("\nV = {");
+    for (int u = 0; u < g->count; ++u)
+        printf("%s%s", u ? ", " : "", CLASSLIST[u][0]);
+    puts("}");
+    puts("\nE (prerequisite, course):");
+    for (int u = 0; u < g->count; ++u)
+        for (int i = 0; i < g->degree[u]; ++i)
+            printf("(%s, %s)\n", CLASSLIST[u][0],
+                   CLASSLIST[g->neighbors[u][i]][0]);
+}
+
+int main(void)
+{
+    Graph graph;
+    int order[COURSE_COUNT];
+    if (!generateGraph(&graph)) {
+        fputs("Could not construct the graph.\n", stderr);
+        return EXIT_FAILURE;
+    }
+    printf("Courses: %d; prerequisite edges: %d\n\n", graph.count, graph.edges);
+    printGraph(&graph);
+    int status = topologicalSort(&graph, order, COURSE_COUNT);
+    if (status != 1) {
+        fputs(status == 0 ? "Cycle detected: no valid course order exists.\n" :
+              "Invalid sorting arguments.\n", stderr);
+        return EXIT_FAILURE;
+    }
+    if (!validateOrder(&graph, order, COURSE_COUNT)) {
+        fputs("Course order validation failed.\n", stderr);
+        return EXIT_FAILURE;
+    }
+    puts("\nDFS topological order (one valid solution):");
+    for (int i = 0; i < COURSE_COUNT; ++i)
+        printf("%2d. %s\n", i + 1, CLASSLIST[order[i]][0]);
+    puts("Validation: PASS (every prerequisite precedes its course)");
+    return EXIT_SUCCESS;
 }
