@@ -10,7 +10,7 @@ In real life, we have many things to do. We always need to think of the sequence
 | Member          | Contribution                                                   |
 | --------------- | -------------------------------------------------------------- |
 | Joshua Longoria | Report & Code clean up           |
-| Kylon Ford      | --                               |
+| Kylon Ford      | test and sanitize results        |
 | Mason Womack    | --                               |
 | Mia Troncoso    | --                               |
 | Marvin Stephens | --                               |
