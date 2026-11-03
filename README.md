@@ -12,7 +12,7 @@ In real life, we have many things to do. We always need to think of the sequence
 | Joshua Longoria | Report & Code clean up           |
 | Kylon Ford      | test and sanitize results        |
 | Mason Womack    | --                               |
-| Mia Troncoso    | --                               |
+| Mia Troncoso    | Graph C and H & Test Graph                               |
 | Marvin Stephens | --                               |
 
 # Courses 
