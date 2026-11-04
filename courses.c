@@ -1,7 +1,7 @@
 #include "courses.h"
 #include <string.h>
 
-/* Prerequisites copied from the supplied Project2.doc, not a catalog. */
+
 const Course courses[] = {
     {"CS 1411", "Programming Principles I", {NULL}, 0},
     {"MATH 1451", "Calculus I with Applications", {NULL}, 0},
