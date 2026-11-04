@@ -1,0 +1,7 @@
+PASS: all 29 courses and 30 raw prerequisite relationships
+PASS: empty graph, disconnected components and isolated vertex
+PASS: converging dependencies, duplicate edge and repeat sorting
+PASS: directed cycle in disconnected component and self-loop
+PASS: invalid vertex IDs, buffers, orders and NULL arguments
+PASS: all 64 directed three-vertex graphs against brute-force oracle
+All 6 test groups passed.
