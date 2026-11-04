@@ -10,7 +10,7 @@ In real life, we have many things to do. We always need to think of the sequence
 | Member          | Contribution                                                   |
 | --------------- | -------------------------------------------------------------- |
 | Joshua Longoria | Report & Code clean up           |
-| Kylon Ford      | test and sanitize results        |
+| Kylon Ford      | Results text files               |
 | Mason Womack    | --                               |
 | Mia Troncoso    | Graph C and H & Test Graph                               |
 | Marvin Stephens | --                               |
