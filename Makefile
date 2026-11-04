@@ -1,18 +1,24 @@
+
 CC = gcc
-CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -O2
+CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Werror -O2
+SOURCES = graph.c courses.c
 
-.PHONY: all test clean
+all: project2 test_graph
 
-all: project2.exe test_graph.exe
+project2: project2.c $(SOURCES) graph.h courses.h
+	$(CC) $(CFLAGS) -o $@ project2.c $(SOURCES)
 
-project2.exe: project2.c courses.c graph.c courses.h graph.h
-	$(CC) $(CFLAGS) -o $@ project2.c courses.c graph.c
+test_graph: test_graph.c $(SOURCES) graph.h courses.h
+	$(CC) $(CFLAGS) -o $@ test_graph.c $(SOURCES)
 
-test_graph.exe: test_graph.c courses.c graph.c courses.h graph.h
-	$(CC) $(CFLAGS) -o $@ test_graph.c courses.c graph.c
+test: test_graph
+	./test_graph
 
-test: test_graph.exe
-	./test_graph.exe
+sanitize:
+	$(CC) -std=c11 -Wall -Wextra -Wpedantic -g -fsanitize=address,undefined -fno-omit-frame-pointer -o test_graph_san test_graph.c $(SOURCES)
+	./test_graph_san
 
 clean:
-	$(RM) project2.exe test_graph.exe
+	rm -f project2 test_graph test_graph_san
+
+.PHONY: all test sanitize clean
